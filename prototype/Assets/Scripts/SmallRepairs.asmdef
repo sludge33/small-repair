@@ -1,0 +1,8 @@
+{
+    "name": "SmallRepairs",
+    "rootNamespace": "SmallRepairs",
+    "references": [
+        "Unity.InputSystem"
+    ],
+    "autoReferenced": true
+}
