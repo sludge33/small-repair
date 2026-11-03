@@ -1,4 +1,5 @@
 using SmallRepairs.Gesture;
+using SmallRepairs.Haptics;
 using SmallRepairs.Modulation;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -26,7 +27,6 @@ namespace SmallRepairs.Diagnostics
         static readonly Color32 PressureColor = new Color32(250, 190, 90, 255);
 
         ModulationParams _modulationParams;
-        ModulationMapper _mapper;
         ModulationFrame _modulation;
 
         Graph _speed;
@@ -41,7 +41,6 @@ namespace SmallRepairs.Diagnostics
         public void Configure(ModulationParams modulationParams)
         {
             _modulationParams = modulationParams;
-            _mapper = new ModulationMapper(_modulationParams);
         }
 
         void Awake()
@@ -72,7 +71,9 @@ namespace SmallRepairs.Diagnostics
                 return;
 
             _gesture = service.Current;
-            _modulation = _mapper.Map(_gesture, Time.unscaledDeltaTime);
+            ModulationService modulation = ModulationService.Instance;
+            if (modulation != null)
+                _modulation = modulation.Current;
 
             float maxSpeed = _modulationParams.SpeedLayerThresholds.z;
             _speed.Push(_gesture.Speed / Mathf.Max(maxSpeed, 1f));
@@ -130,14 +131,14 @@ namespace SmallRepairs.Diagnostics
 
             y = DrawLine(left, y, $"{_gesture.Contact}  {service.SampleRateHz:F0} Hz");
             y = DrawLine(left, y, $"pos  {_gesture.NormalizedPosition.x:F2}, {_gesture.NormalizedPosition.y:F2}");
-            y = DrawLine(left, y, "— targets, not yet driving audio or haptics —");
+            y = DrawLine(left, y, "— driving placeholder audio and haptics —");
             y = DrawLine(left, y, $"layers  S {_modulation.SlowLayer:F2}  M {_modulation.MediumLayer:F2}  F {_modulation.FastLayer:F2}");
             y = DrawLine(left, y, $"pitch  {_modulation.PitchSemitones:+0.0;-0.0;0.0} st");
             y = DrawLine(left, y, $"lowpass  {_modulation.LowpassHz:F0} Hz");
             y = DrawLine(left, y, $"gain  {_modulation.Gain:F2}");
             y = DrawLine(left, y, $"body  {_modulation.Body:F2}");
             y = DrawLine(left, y, $"pan  {_modulation.Pan:+0.00;-0.00;0.00}");
-            y = DrawLine(left, y, $"ticks  {_modulation.HapticTickRate:F0}/s");
+            y = DrawLine(left, y, $"ticks  {_modulation.HapticTickRate:F0}/s  fired {HapticsService.Instance?.TicksFired ?? 0}");
             DrawLine(left, y, $"sharpness  {_modulation.HapticSharpness:F2}  ({_modulationParams.Material.Name})");
         }
 

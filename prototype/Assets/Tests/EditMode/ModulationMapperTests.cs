@@ -173,6 +173,25 @@ namespace SmallRepairs.Tests
         }
 
         [Test]
+        public void Retouch_DuringTheTail_FadesInsteadOfCutting()
+        {
+            var parameters = new ModulationParams();
+            float largestAllowedDrop = 2f * FrameTime * 1000f / parameters.ReleaseMs;
+            var live = new LiveStroke();
+
+            live.Run(0.5f, true, parameters.SpeedLayerThresholds.y);
+            ModulationFrame previous = live.Run(parameters.ReleaseMs / 4000f, false, 0f);
+            Assert.Greater(previous.Gain, 0.5f);
+
+            for (int i = 0; i < 12; i++)
+            {
+                ModulationFrame current = live.Run(FrameTime, true, 0f);
+                Assert.Less(previous.Gain - current.Gain, largestAllowedDrop);
+                previous = current;
+            }
+        }
+
+        [Test]
         public void NewStroke_DoesNotInheritTheLastStrokesSpeed()
         {
             var parameters = new ModulationParams();

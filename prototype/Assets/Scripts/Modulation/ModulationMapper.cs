@@ -32,6 +32,7 @@ namespace SmallRepairs.Modulation
         readonly ModulationParams _params;
         float _envelope;
         float _strokeSpeed;
+        float _moving;
 
         public ModulationMapper(ModulationParams parameters)
         {
@@ -40,7 +41,7 @@ namespace SmallRepairs.Modulation
 
         public ModulationFrame Map(GestureFrame gesture, float deltaTime)
         {
-            StepEnvelope(gesture.IsTouching, deltaTime);
+            _envelope = Ramp(_envelope, gesture.IsTouching ? 1f : 0f, deltaTime);
 
             Vector3 anchors = _params.SpeedLayerThresholds;
 
@@ -53,8 +54,13 @@ namespace SmallRepairs.Modulation
             float slowToMedium = Mathf.InverseLerp(anchors.x, anchors.y, speed);
             float mediumToFast = Mathf.InverseLerp(anchors.y, anchors.z, speed);
 
-            // A finger at rest makes no sound, so gain follows movement up to the slow anchor.
-            float moving = Mathf.Clamp01(speed / Mathf.Max(anchors.x, 1f));
+            // A finger at rest makes no sound, so gain follows movement up to the slow anchor. It ramps rather than jumps:
+            // a re-touch during the release tail starts at speed 0 and would otherwise cut the tail with a click.
+            _moving = Ramp(_moving, Mathf.Clamp01(speed / Mathf.Max(anchors.x, 1f)), deltaTime);
+
+            // Once the tail has finished nothing is left to protect, and a new stroke must not start from the old movement.
+            if (_envelope <= 0f)
+                _moving = 0f;
             float pressureGain = Mathf.Lerp(_params.MinPressureGain, 1f, gesture.Pressure);
 
             float pitch = speed < anchors.y
@@ -73,7 +79,7 @@ namespace SmallRepairs.Modulation
                 FastLayer = Mathf.Sin(mediumToFast * Mathf.PI * 0.5f),
                 PitchSemitones = pitch,
                 LowpassHz = lowpass,
-                Gain = _envelope * moving * pressureGain,
+                Gain = _envelope * _moving * pressureGain,
                 Body = gesture.Pressure,
                 Pan = gesture.NormalizedPosition.x * 2f - 1f,
                 HapticTickRate = gesture.IsTouching
@@ -83,12 +89,12 @@ namespace SmallRepairs.Modulation
             };
         }
 
-        void StepEnvelope(bool touching, float deltaTime)
+        /// <summary>Rises over the attack time and falls over the release time.</summary>
+        float Ramp(float current, float target, float deltaTime)
         {
-            float target = touching ? 1f : 0f;
-            float ms = touching ? _params.AttackMs : _params.ReleaseMs;
+            float ms = target > current ? _params.AttackMs : _params.ReleaseMs;
             float step = ms > 0f ? deltaTime * 1000f / ms : 1f;
-            _envelope = Mathf.MoveTowards(_envelope, target, step);
+            return Mathf.MoveTowards(current, target, step);
         }
     }
 }

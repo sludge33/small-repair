@@ -1,10 +1,13 @@
+using SmallRepairs.Audio;
 using SmallRepairs.Diagnostics;
 using SmallRepairs.Gesture;
+using SmallRepairs.Haptics;
+using SmallRepairs.Modulation;
 using UnityEngine;
 
 namespace SmallRepairs
 {
-    /// <summary>Creates the gesture services before the first scene loads, so every scene gets them without setup.</summary>
+    /// <summary>Creates the gesture, audio and haptic services before the first scene loads, so every scene gets them without setup.</summary>
     public static class GestureRig
     {
         const int TargetFrameRate = 120;
@@ -29,6 +32,9 @@ namespace SmallRepairs
             Object.DontDestroyOnLoad(rig);
 
             rig.AddComponent<GestureService>().Configure(tuning.Gesture);
+            rig.AddComponent<ModulationService>().Configure(tuning.Modulation);
+            rig.AddComponent<ScrapeAudioPlaceholder>();
+            rig.AddComponent<HapticsService>();
             rig.AddComponent<GestureDebugOverlay>().Configure(tuning.Modulation);
         }
     }
