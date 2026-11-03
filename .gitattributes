@@ -1,0 +1,54 @@
+# Text: normalize line endings
+* text=auto
+
+# Unity YAML assets: merge with UnityYAMLMerge, never diff as binary
+*.unity    text merge=unityyamlmerge eol=lf
+*.prefab   text merge=unityyamlmerge eol=lf
+*.asset    text merge=unityyamlmerge eol=lf
+*.mat      text merge=unityyamlmerge eol=lf
+*.anim     text merge=unityyamlmerge eol=lf
+*.controller text merge=unityyamlmerge eol=lf
+*.meta     text merge=unityyamlmerge eol=lf
+*.physicMaterial text merge=unityyamlmerge eol=lf
+
+# Audio (foley raw and edited, FMOD sources)
+*.wav  filter=lfs diff=lfs merge=lfs -text
+*.flac filter=lfs diff=lfs merge=lfs -text
+*.aif  filter=lfs diff=lfs merge=lfs -text
+*.aiff filter=lfs diff=lfs merge=lfs -text
+*.mp3  filter=lfs diff=lfs merge=lfs -text
+*.ogg  filter=lfs diff=lfs merge=lfs -text
+*.bank filter=lfs diff=lfs merge=lfs -text
+
+# Images and textures
+*.png  filter=lfs diff=lfs merge=lfs -text
+*.jpg  filter=lfs diff=lfs merge=lfs -text
+*.jpeg filter=lfs diff=lfs merge=lfs -text
+*.psd  filter=lfs diff=lfs merge=lfs -text
+*.tga  filter=lfs diff=lfs merge=lfs -text
+*.tif  filter=lfs diff=lfs merge=lfs -text
+*.tiff filter=lfs diff=lfs merge=lfs -text
+*.exr  filter=lfs diff=lfs merge=lfs -text
+*.hdr  filter=lfs diff=lfs merge=lfs -text
+
+# 3D models and scans
+*.fbx   filter=lfs diff=lfs merge=lfs -text
+*.obj   filter=lfs diff=lfs merge=lfs -text
+*.blend filter=lfs diff=lfs merge=lfs -text
+*.glb   filter=lfs diff=lfs merge=lfs -text
+
+# Video (playtest captures, clip tests)
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.mov filter=lfs diff=lfs merge=lfs -text
+
+# Native plugins and archives
+*.dll    filter=lfs diff=lfs merge=lfs -text
+*.so     filter=lfs diff=lfs merge=lfs -text
+*.a      filter=lfs diff=lfs merge=lfs -text
+*.aar    filter=lfs diff=lfs merge=lfs -text
+*.bundle filter=lfs diff=lfs merge=lfs -text
+*.zip    filter=lfs diff=lfs merge=lfs -text
+*.unitypackage filter=lfs diff=lfs merge=lfs -text
+
+# Haptic patterns are JSON; keep them diffable
+*.ahap text eol=lf

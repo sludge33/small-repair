@@ -15,7 +15,15 @@ Goal: one object at final audio/haptic quality, placeholder art. Go/no-go = play
 - [ ] Week 5 – Android haptics, performance pass, free-mode replay
 - [ ] Week 6 – playtests, tuning, go/no-go
 
-Open decision before Week 1: Unity 6 or Godot 4.
+Engine: **Unity 6 (URP) + FMOD Studio** — see [docs/decisions/0001-engine.md](docs/decisions/0001-engine.md).
+
+## Setup
+
+1. Install Git LFS once per machine: `git lfs install` (audio, textures, models and native plugins are stored in LFS; see `.gitattributes`).
+2. Install Unity Hub and the latest Unity 6 LTS with the Android Build Support and iOS Build Support modules.
+3. Open `prototype/` in Unity Hub.
+4. For clean scene/prefab merges, register UnityYAMLMerge in your git config (path depends on the editor version):
+   `git config merge.unityyamlmerge.driver '"<Unity editor>/Data/Tools/UnityYAMLMerge.exe" merge -p %O %B %A %A'`
 
 ## Folders
 

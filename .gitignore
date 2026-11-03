@@ -1,0 +1,51 @@
+# Unity 6 project lives in prototype/
+/prototype/[Ll]ibrary/
+/prototype/[Tt]emp/
+/prototype/[Oo]bj/
+/prototype/[Bb]uild/
+/prototype/[Bb]uilds/
+/prototype/[Ll]ogs/
+/prototype/[Uu]ser[Ss]ettings/
+/prototype/[Mm]emoryCaptures/
+/prototype/[Rr]ecordings/
+
+# Generated IDE files
+/prototype/.vs/
+/prototype/.idea/
+/prototype/.vscode/
+/prototype/*.csproj
+/prototype/*.sln
+/prototype/*.slnx
+/prototype/*.user
+/prototype/*.unityproj
+/prototype/*.pidb
+/prototype/*.booproj
+/prototype/*.svd
+/prototype/*.pdb
+/prototype/*.mdb
+/prototype/*.opendb
+/prototype/*.VC.db
+/prototype/*.pidb.meta
+/prototype/*.pdb.meta
+/prototype/*.mdb.meta
+
+# Build output and crash reports
+/prototype/sysinfo.txt
+/prototype/crashlytics-build.properties
+*.apk
+*.aab
+*.ipa
+/prototype/[Aa]ssets/[Ss]treamingAssets/aa/
+/prototype/[Aa]ssets/[Ss]treamingAssets/aa.meta
+
+# FMOD Studio project caches (the .fspro and Metadata stay tracked)
+/audio/fmod/**/.cache/
+/audio/fmod/**/.user/
+/audio/fmod/**/Build/
+
+# OS and editor clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
