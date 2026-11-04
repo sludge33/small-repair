@@ -7,13 +7,20 @@ import type { StrokeTool } from './bowl-repair';
 
 const LOOP_SECONDS = 4;
 
+/** Everything with a continuous sound: the repair's tools, and the tape and tissue of the parcel. */
+export type FoleyTool = StrokeTool | 'tape' | 'tissue';
+
 /** Low-pass cutoffs of the slow, medium, fast and body layers, in Hz. Harder contact is brighter. */
-const TOOL_CUTOFFS_HZ: Record<StrokeTool, [number, number, number, number]> = {
+const TOOL_CUTOFFS_HZ: Record<FoleyTool, [number, number, number, number]> = {
   blade: [3000, 6000, 12000, 160],
   brush: [700, 1300, 2400, 90],
   duster: [1500, 3000, 6000, 70],
   cloth: [450, 900, 1800, 120],
+  tape: [2000, 5000, 10000, 140],
+  tissue: [1800, 3500, 7000, 60],
 };
+
+export const isFoleyTool = (tool: string): tool is FoleyTool => tool in TOOL_CUTOFFS_HZ;
 
 /** Level of the body layer against the texture layers. */
 export const BODY_LEVEL = 0.5;
@@ -59,7 +66,7 @@ function filteredLoop(source: Float32Array, sampleRate: number, cutoffHz: number
   return out;
 }
 
-export function scrapeLayers(sampleRate: number, tool: StrokeTool = 'blade'): FoleyLayers {
+export function scrapeLayers(sampleRate: number, tool: FoleyTool = 'blade'): FoleyLayers {
   const source = noise(Math.round(sampleRate * LOOP_SECONDS));
   const [slow, medium, fast, body] = TOOL_CUTOFFS_HZ[tool];
   return {

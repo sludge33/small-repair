@@ -3,6 +3,8 @@ import type { BowlView } from './bowl-view';
 import { STEP_TOOL, type BowlRepair, type StepId, type StrokeTool } from './core/bowl-repair';
 import type { Uv } from './core/bowl-surface';
 import { touchAction } from './core/bowl-touch';
+import { SHARDS } from './core/fracture';
+import { alongLine, type GhostMove } from './core/ghost';
 import { isTouching, type GestureFrame } from './core/gesture';
 import { TOOL_MATERIALS, defaultModulationParams, type Material } from './core/modulation';
 import type { ShardFit } from './core/shard-fit';
@@ -16,6 +18,15 @@ const CURE_SECONDS = 10;
 const TOUCH_LIFT_PX = 56;
 const WHEEL_TWIST_RADIANS = (2 * Math.PI) / 180;
 const WHEEL_ZOOM_RATE = 0.002;
+
+/** The stretch of a crack the ghost hand traces, as shares of its length. */
+const DEMO_FROM = 0.35;
+const DEMO_TO = 0.65;
+const DEMO_CIRCLE_PX = 26;
+const DEMO_TWIST_PX = 42;
+const DEMO_TWIST_RADIANS = 0.7;
+
+const mixUv = (a: Uv, b: Uv, t: number): Uv => ({ u: a.u + (b.u - a.u) * t, v: a.v + (b.v - a.v) * t });
 
 type Action = 'none' | 'stroke' | 'orbit' | 'hold';
 
@@ -46,7 +57,6 @@ export class Workbench {
     tray.onSkipCure = () => {
       if (this.cureLeft !== null) this.cureLeft = 0;
     };
-    tray.onAgain = () => this.restart();
 
     surface.addEventListener(
       'wheel',
@@ -63,6 +73,65 @@ export class Workbench {
   get material(): Material {
     const tool = this.repair.step === 'done' ? null : STEP_TOOL[this.repair.step];
     return tool && tool in TOOL_MATERIALS ? TOOL_MATERIALS[tool as StrokeTool] : defaultModulationParams.material;
+  }
+
+  /** The step to demonstrate, or null while there is nothing for a hand to do. */
+  get verb(): StepId | null {
+    return this.repair.step === 'done' || this.lidClosing ? null : this.repair.step;
+  }
+
+  /** A demonstration of the live step, on the bowl as it stands on screen now. */
+  demo(): GhostMove[] {
+    const { step } = this.repair;
+    if (step === 'cure') {
+      return [{ seconds: 0.2, fingers: () => [{ x: window.innerWidth / 2, y: window.innerHeight * 0.45 }] }];
+    }
+
+    const index = this.repair.unfinishedShard();
+    const { crack, center } = SHARDS[index];
+    this.view.turnTo(center.u, center.v);
+
+    const seat = () => this.view.project(center.u, center.v);
+    if (step === 'align') {
+      const carry = (t: number) => {
+        const from = this.view.shardOnScreen(index);
+        const to = seat();
+        return [{ x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t }];
+      };
+      const twist = (t: number) => {
+        const { x, y } = seat();
+        const turn = t * DEMO_TWIST_RADIANS;
+        const dx = Math.cos(turn) * DEMO_TWIST_PX;
+        const dy = Math.sin(turn) * DEMO_TWIST_PX;
+        return [
+          { x: x - dx, y: y - dy },
+          { x: x + dx, y: y + dy },
+        ];
+      };
+      return [
+        { seconds: 1.3, fingers: carry },
+        { seconds: 0.9, fingers: twist },
+      ];
+    }
+
+    const stretch = crack.slice(Math.floor(crack.length * DEMO_FROM), Math.ceil(crack.length * DEMO_TO));
+    const onCrack = (t: number) => {
+      const { u, v } = alongLine(stretch, t, mixUv);
+      return this.view.project(u, v);
+    };
+
+    if (step === 'gold') {
+      return [0.2, 0.5, 0.8].map((t) => ({ seconds: 0.16, fingers: () => [onCrack(t)] }));
+    }
+    if (step === 'polish') {
+      const circles = (t: number) => {
+        const { x, y } = onCrack(0.5);
+        const angle = t * Math.PI * 4;
+        return [{ x: x + Math.cos(angle) * DEMO_CIRCLE_PX, y: y + Math.sin(angle) * DEMO_CIRCLE_PX }];
+      };
+      return [{ seconds: 1.8, fingers: circles }];
+    }
+    return [{ seconds: step === 'lacquer' ? 1.8 : 1.3, fingers: (t) => [onCrack(t)] }];
   }
 
   /** Runs one frame and returns the gesture audio and haptics should hear: silent unless a tool is touching the bowl. */
@@ -195,7 +264,8 @@ export class Workbench {
     this.audio.setTool(step === 'done' ? null : STEP_TOOL[step]);
   }
 
-  private restart() {
+  /** Back to a broken bowl. */
+  restart() {
     this.repair.reset();
     this.view.reset();
     this.action = 'none';

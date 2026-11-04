@@ -11,9 +11,11 @@ Goal: one object at final audio/haptic quality, placeholder art. Go/no-go = play
 - [ ] Week 1 – gesture model, debug overlay, blade-on-ceramic wired to audio + haptics
 - [ ] Week 2 – record/edit foley, Web Audio layers, tune modulation on device
 - [x] Week 3 – placeholder 3D bowl generated in code, masks (clean, lacquer, gold, polish), shard alignment + snapping (played in a desktop browser, not yet on a phone)
-- [ ] Week 4 – unbox, wrap and letter flow, tutorial ghost hand
+- [x] Week 4 – unbox, wrap and letter flow, tutorial ghost hand (played in a desktop browser, not yet on a phone)
 - [ ] Week 5 – Android haptics, performance pass, free-mode replay
 - [ ] Week 6 – playtests, tuning, go/no-go
+
+In the slice's scope but in no week yet: the inspect step (tap three cracks) and the one shelf slot. Until free mode exists, "Again" replays the whole parcel, note included.
 
 Platform: **mobile web (TypeScript, Vite, Web Audio, PWA)** — see [docs/decisions/0002-web.md](docs/decisions/0002-web.md). iPhone browsers have no haptics; that decision record explains the trade-off.
 

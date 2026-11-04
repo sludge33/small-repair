@@ -5,7 +5,11 @@ import { isTouching } from './core/gesture';
 import { ModulationMapper } from './core/modulation';
 import { DebugOverlay } from './debug-overlay';
 import { Haptics } from './haptics';
+import { GhostHand } from './ghost-hand';
 import { GestureInput } from './input';
+import { LetterDesk } from './letter-desk';
+import { ParcelBench } from './parcel-bench';
+import { Session } from './session';
 import { ToolTray } from './tool-tray';
 import { Workbench } from './workbench';
 import './styles.css';
@@ -28,10 +32,14 @@ function begin() {
   const view = new BowlView(surface, repair);
   const tray = new ToolTray(document.getElementById('tools')!);
   const workbench = new Workbench(surface, input, repair, view, audio, haptics, tray);
+  const bench = new ParcelBench(document.getElementById('parcel')!, input, audio, haptics);
+  const desk = new LetterDesk(document.getElementById('desk')!);
+  const ghost = new GhostHand(document.getElementById('ghost')!);
+  const session = new Session(bench, desk, workbench, repair, tray, ghost, audio, haptics, document.getElementById('again')!);
   input.onTouchDown = () => audio.wake();
 
-  // Lets the preview walk the whole repair with synthetic strokes.
-  if (import.meta.env.DEV) Object.assign(window, { smallRepairs: { repair, view } });
+  // Lets the preview walk the whole session with synthetic strokes.
+  if (import.meta.env.DEV) Object.assign(window, { smallRepairs: { repair, view, session, bench } });
 
   let lastTime = performance.now() / 1000;
   let framesThisSecond = 0;
@@ -44,12 +52,12 @@ function begin() {
     lastTime = time;
 
     const gesture = input.step(time);
-    const voiced = workbench.step(gesture, deltaTime);
-    mapper.material = workbench.material;
+    const voiced = session.step(gesture, deltaTime);
+    mapper.material = session.material;
     const modulation = mapper.map(voiced, deltaTime);
     audio.apply(modulation);
     haptics.step(modulation, deltaTime);
-    view.render(deltaTime);
+    if (session.bowlOnScreen) view.render(deltaTime);
 
     framesThisSecond++;
     if (time - rateWindowStart >= 1) {

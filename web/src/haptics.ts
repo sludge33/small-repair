@@ -10,6 +10,10 @@ const PATTERNS = {
   seat: [12, 30, 22],
   lid: [40],
   puff: [6],
+  flap: [18],
+  box: [32],
+  crease: [8],
+  tear: [10],
 };
 
 /**

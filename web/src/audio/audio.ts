@@ -1,7 +1,7 @@
 import type { Tool } from '../core/bowl-repair';
 import type { ModulationFrame } from '../core/modulation';
 import { oneShot, type OneShot } from '../core/one-shots';
-import { scrapeLayers } from '../core/scrape-layers';
+import { isFoleyTool, scrapeLayers, type FoleyTool } from '../core/scrape-layers';
 import { FoleyVoice } from './foley-voice';
 
 const FIT_TONE_LEVEL = 0.07;
@@ -17,7 +17,7 @@ export class AudioEngine {
   private readonly fitGain: GainNode;
   private readonly oneShots = new Map<OneShot, AudioBuffer>();
   private voice: FoleyVoice | null = null;
-  private voiceTool: Tool | null = null;
+  private voiceTool: Tool | FoleyTool | null = null;
   private readonly scope: Float32Array<ArrayBuffer>;
 
   constructor() {
@@ -53,12 +53,11 @@ export class AudioEngine {
   }
 
   /** Swaps in the continuous sound of a tool. Hands and the lid have none, only one-shots. */
-  setTool(tool: Tool | null) {
+  setTool(tool: Tool | FoleyTool | null) {
     if (tool === this.voiceTool) return;
     this.voiceTool = tool;
     this.voice?.retire();
-    const stroked = tool === 'blade' || tool === 'brush' || tool === 'duster' || tool === 'cloth';
-    this.voice = stroked ? new FoleyVoice(this.ctx, scrapeLayers(this.ctx.sampleRate, tool), this.analyser) : null;
+    this.voice = tool && isFoleyTool(tool) ? new FoleyVoice(this.ctx, scrapeLayers(this.ctx.sampleRate, tool), this.analyser) : null;
   }
 
   play(name: OneShot) {

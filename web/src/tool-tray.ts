@@ -5,30 +5,18 @@ const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
 const STEPS = Object.keys(STEP_TOOL) as Exclude<StepId, 'done'>[];
 
-/** Temporary, until the Week 4 ghost hand shows each step instead. */
-const HINTS: Record<StepId, string> = {
-  clean: 'Scrape the old glue off every broken edge. Drag off the bowl to turn it.',
-  align: 'Carry each shard to its gap. Twist with two fingers to square it up.',
-  lacquer: 'Brush lacquer along every crack. Press harder for a wider line.',
-  cure: 'Tap to close the lid.',
-  gold: 'Tap or sweep gold dust over the lacquer.',
-  polish: 'Rub the gold in slow, steady circles.',
-  done: 'Mended.',
-};
-
-/** The flat UI over the bowl: tools and progress along the bottom, a one-line hint, the cure wait and "again". */
+/** The flat UI over the bowl: tools and progress along the bottom, the cure wait and the way on to wrapping. */
 export class ToolTray {
   onSkipCure: () => void = () => {};
-  onAgain: () => void = () => {};
+  onWrap: () => void = () => {};
 
   private readonly items: { root: HTMLElement; ring: SVGCircleElement }[] = [];
-  private readonly hint = document.getElementById('hint')!;
   private readonly cure = document.getElementById('cure')!;
-  private readonly again = document.getElementById('again')!;
+  private readonly wrap = document.getElementById('wrap')!;
   private shownStep: StepId | null = null;
   private shownProgress = -1;
 
-  constructor(root: HTMLElement) {
+  constructor(private readonly root: HTMLElement) {
     for (const step of STEPS) {
       const item = document.createElement('div');
       item.className = 'tool';
@@ -42,19 +30,21 @@ export class ToolTray {
       root.append(item);
       this.items.push({ root: item, ring: item.querySelector('.ring')! });
     }
-    root.hidden = false;
-    this.hint.hidden = false;
 
     this.cure.addEventListener('click', () => this.onSkipCure());
-    this.again.addEventListener('click', () => this.onAgain());
+    this.wrap.addEventListener('click', () => this.onWrap());
+  }
+
+  show(visible: boolean) {
+    this.root.hidden = !visible;
+    this.wrap.hidden = !visible || this.shownStep !== 'done';
   }
 
   update(step: StepId, progress: number) {
     if (step !== this.shownStep) {
       this.shownStep = step;
       this.shownProgress = -1;
-      this.hint.textContent = HINTS[step];
-      this.again.hidden = step !== 'done';
+      this.wrap.hidden = this.root.hidden || step !== 'done';
 
       const live = STEPS.indexOf(step as Exclude<StepId, 'done'>);
       this.items.forEach((item, i) => {

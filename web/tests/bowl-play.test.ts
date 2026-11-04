@@ -86,7 +86,7 @@ describe('twoFingerDelta', () => {
 });
 
 describe('one-shots', () => {
-  it.each<OneShot>(['seat', 'lid', 'puff'])('%s stays in range, repeats exactly and ends near silence', (name) => {
+  it.each<OneShot>(['seat', 'lid', 'puff', 'flap', 'box', 'crease', 'tear', 'unfold'])('%s stays in range, repeats exactly and ends near silence', (name) => {
     const samples = oneShot(name, SAMPLE_RATE);
     expect(oneShot(name, SAMPLE_RATE)).toEqual(samples);
     expect(Math.max(...samples.map(Math.abs))).toBeLessThanOrEqual(1);

@@ -3,7 +3,7 @@
  * Delete this when decoded recordings take their place.
  */
 
-export type OneShot = 'seat' | 'lid' | 'puff';
+export type OneShot = 'seat' | 'lid' | 'puff' | 'flap' | 'box' | 'crease' | 'tear' | 'unfold';
 
 function noiseSource(seed: number) {
   let x = seed >>> 0 || 1;
@@ -55,8 +55,78 @@ function puff(sampleRate: number) {
   return out;
 }
 
+/** Card landing on card: a dull thud with a papery front. */
+function flap(sampleRate: number) {
+  const out = new Float32Array(Math.round(sampleRate * 0.16));
+  const noise = noiseSource(0x3a91);
+  for (let i = 0; i < out.length; i++) {
+    const t = i / sampleRate;
+    const thud = Math.sin(2 * Math.PI * (120 + 90 * Math.exp(-t * 60)) * t) * Math.exp(-t * 34);
+    out[i] = 0.6 * thud + 0.25 * noise() * Math.exp(-t * 220);
+  }
+  return out;
+}
+
+/** The whole box shutting: the flap's thud, lower and longer, with a hollow ring. */
+function box(sampleRate: number) {
+  const out = new Float32Array(Math.round(sampleRate * 0.3));
+  const noise = noiseSource(0x6d13);
+  for (let i = 0; i < out.length; i++) {
+    const t = i / sampleRate;
+    const thud = Math.sin(2 * Math.PI * (82 + 70 * Math.exp(-t * 45)) * t) * Math.exp(-t * 20);
+    const hollow = Math.sin(2 * Math.PI * 310 * t) * Math.exp(-t * 42);
+    out[i] = 0.7 * thud + 0.14 * hollow + 0.2 * noise() * Math.exp(-t * 200);
+  }
+  return out;
+}
+
+/** A fold pressed flat: one short, soft crackle. */
+function crease(sampleRate: number) {
+  const out = new Float32Array(Math.round(sampleRate * 0.09));
+  const noise = noiseSource(0x19f4);
+  const coefficient = 1 - Math.exp((-2 * Math.PI * 3800) / sampleRate);
+  let state = 0;
+  for (let i = 0; i < out.length; i++) {
+    const t = i / sampleRate;
+    state += (noise() - state) * coefficient;
+    out[i] = 0.7 * state * Math.exp(-t * 70);
+  }
+  return out;
+}
+
+/** Paper ripping: bright noise, roughened by a stutter. */
+function tear(sampleRate: number) {
+  const out = new Float32Array(Math.round(sampleRate * 0.34));
+  const noise = noiseSource(0x58c7);
+  for (let i = 0; i < out.length; i++) {
+    const seconds = i / sampleRate;
+    const t = i / out.length;
+    const stutter = 0.55 + 0.45 * Math.sin(2 * Math.PI * 60 * seconds);
+    out[i] = 0.5 * noise() * stutter * Math.sin(Math.PI * Math.sqrt(t)) ** 2;
+  }
+  return out;
+}
+
+/** A letter opening out: three quiet crackles, each softer than the last. */
+function unfold(sampleRate: number) {
+  const out = new Float32Array(Math.round(sampleRate * 0.42));
+  const noise = noiseSource(0x2fa8);
+  const crackles = [
+    [0, 0.5],
+    [0.11, 0.36],
+    [0.25, 0.24],
+  ];
+  for (let i = 0; i < out.length; i++) {
+    const t = i / sampleRate;
+    let envelope = 0;
+    for (const [at, level] of crackles) if (t >= at) envelope += level * Math.exp(-(t - at) * 48);
+    out[i] = noise() * envelope;
+  }
+  return out;
+}
+
+const SYNTHS: Record<OneShot, (sampleRate: number) => Float32Array> = { seat, lid, puff, flap, box, crease, tear, unfold };
+
 export function oneShot(name: OneShot, sampleRate: number) {
-  if (name === 'seat') return seat(sampleRate);
-  if (name === 'lid') return lid(sampleRate);
-  return puff(sampleRate);
+  return SYNTHS[name](sampleRate);
 }

@@ -321,10 +321,7 @@ export class BowlView {
   /** Picks a shard up and starts turning the bowl to face its seat. */
   grab(index: number) {
     const { u, v } = SHARDS[index].center;
-    const facing = facingAngles(u, v);
-    this.followSeconds = FACE_SEAT_S;
-    this.targetYaw = this.yaw + deltaAngle(this.yaw, facing.yaw);
-    this.targetPitch = facing.pitch;
+    this.turnTo(u, v);
     this.heldIndex = index;
     this.heldTwist = START_TWIST[index];
     this.heldPosition.copy(this.shardMeshes[index].position);
@@ -384,6 +381,14 @@ export class BowlView {
   /** Where a waiting or held shard shows on screen. */
   shardOnScreen(index: number) {
     return this.toClient(this.shardMeshes[index].getWorldPosition(new Vector3()));
+  }
+
+  /** Eases the bowl round to a point on its outer wall. */
+  turnTo(u: number, v: number) {
+    const facing = facingAngles(u, v);
+    this.followSeconds = FACE_SEAT_S;
+    this.targetYaw = this.yaw + deltaAngle(this.yaw, facing.yaw);
+    this.targetPitch = facing.pitch;
   }
 
   /** Turns the bowl straight to a point on its outer wall, without easing. */

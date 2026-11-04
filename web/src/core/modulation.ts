@@ -1,6 +1,6 @@
-import type { StrokeTool } from './bowl-repair';
 import { isTouching, type GestureFrame } from './gesture';
 import { clamp01, inverseLerp, lerp, moveTowards } from './math';
+import type { FoleyTool } from './scrape-layers';
 
 export const defaultModulationParams = {
   /** Speeds (reference px/s) where the slow, medium and fast takes play alone. Between two anchors they crossfade. */
@@ -28,11 +28,13 @@ export const defaultModulationParams = {
 export type ModulationParams = typeof defaultModulationParams;
 export type Material = ModulationParams['material'];
 
-export const TOOL_MATERIALS: Record<StrokeTool, Material> = {
+export const TOOL_MATERIALS: Record<FoleyTool, Material> = {
   blade: defaultModulationParams.material,
   brush: { name: 'Lacquer', hapticTickRate: 18, hapticSharpness: 0.2 },
   duster: { name: 'Gold dust', hapticTickRate: 10, hapticSharpness: 0.1 },
   cloth: { name: 'Cloth on gold', hapticTickRate: 28, hapticSharpness: 0.45 },
+  tape: { name: 'Parcel tape', hapticTickRate: 36, hapticSharpness: 0.7 },
+  tissue: { name: 'Tissue', hapticTickRate: 12, hapticSharpness: 0.1 },
 };
 
 /** The values audio and haptics should use this frame, following the spec's gesture-to-sound table. */

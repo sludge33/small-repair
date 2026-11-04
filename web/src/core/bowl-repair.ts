@@ -183,6 +183,14 @@ export class BowlRepair {
     return sum / coverage.length;
   }
 
+  /** The first shard the live step still has work on, so a demonstration shows something worth doing. */
+  unfinishedShard() {
+    if (this.step === 'align') return Math.max(0, this.seated.indexOf(false));
+    const live = this.liveMask();
+    if (!live) return 0;
+    return Math.max(0, live[0].coverage().findIndex((c) => c < live[1]));
+  }
+
   private liveMask(): [PaintMask, number] | null {
     const p = this.params;
     if (this.step === 'clean') return [this.glue, p.cleanThreshold];

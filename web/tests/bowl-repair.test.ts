@@ -180,3 +180,29 @@ describe('gold', () => {
     expect(repair.step).toBe('polish');
   });
 });
+
+describe('unfinishedShard', () => {
+  it('points at the first shard still waiting for its seat', () => {
+    const repair = new BowlRepair();
+    traceUntilStepEnds(repair, STEADY);
+    expect(repair.step).toBe('align');
+    expect(repair.unfinishedShard()).toBe(0);
+    repair.seat(0, true);
+    expect(repair.unfinishedShard()).toBe(1);
+    repair.seat(2, true);
+    expect(repair.unfinishedShard()).toBe(1);
+  });
+
+  it('moves on from a seam once its coat is finished', () => {
+    const repair = new BowlRepair();
+    expect(repair.unfinishedShard()).toBe(0);
+    for (let pass = 0; pass < 12; pass++) {
+      let last: Uv | null = null;
+      for (const p of SHARDS[0].crack) {
+        repair.stroke(last, p, STEADY);
+        last = p;
+      }
+    }
+    expect(repair.unfinishedShard()).toBe(1);
+  });
+});
