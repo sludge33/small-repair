@@ -1,4 +1,5 @@
 # Builds the web game and publishes it to GitHub Pages (Settings → Pages → Source: GitHub Actions).
+# The paths filter skips empty commits; to redeploy without a change, use Run workflow on the Actions tab.
 name: Deploy to GitHub Pages
 
 on:
