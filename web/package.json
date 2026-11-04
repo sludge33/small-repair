@@ -1,0 +1,19 @@
+{
+  "name": "small-repairs",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Small Repairs: restore one broken object per session; sound and haptics are the reward (mobile web build).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}

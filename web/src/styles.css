@@ -1,0 +1,104 @@
+:root {
+  --bg: #1f1a16;
+  --ink: #e8dfd0;
+  --muted: #a89a86;
+  --gold: #d4a83c;
+  --panel: rgba(0, 0, 0, 0.66);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#surface {
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+}
+
+#marker {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #5ac8fa;
+  pointer-events: none;
+}
+
+/* Fits a 320 px wide phone, and lets every stroke through to the surface beneath. */
+#overlay {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 8px);
+  left: calc(env(safe-area-inset-left) + 8px);
+  width: 256px;
+  padding: 8px;
+  background: var(--panel);
+  font: 12px/18px ui-monospace, Menlo, Consolas, monospace;
+  pointer-events: none;
+}
+
+#overlay canvas {
+  display: block;
+}
+
+#overlay pre {
+  margin: 0;
+  font: inherit;
+  white-space: pre-wrap;
+}
+
+#start {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg);
+  text-align: center;
+}
+
+#start h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 500;
+}
+
+#start p {
+  margin: 0;
+  color: var(--muted);
+}
+
+#start button {
+  padding: 12px 32px;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  background: none;
+  color: var(--gold);
+  font: inherit;
+  font-size: 18px;
+  cursor: pointer;
+}

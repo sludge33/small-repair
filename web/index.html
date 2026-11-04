@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#1f1a16" />
+    <meta name="description" content="Small Repairs: restore one broken object per session; sound and haptics are the reward." />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Small Repairs</title>
+  </head>
+  <body>
+    <div id="surface"><div id="marker" hidden></div></div>
+    <div id="overlay" hidden></div>
+    <div id="start">
+      <h1>Small Repairs</h1>
+      <p>Blade on ceramic, placeholder sound. Headphones recommended.</p>
+      <button id="begin" type="button">Begin</button>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

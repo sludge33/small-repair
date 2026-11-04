@@ -1,0 +1,11 @@
+{
+  "name": "Small Repairs",
+  "short_name": "Small Repairs",
+  "description": "Restore one broken object per session; sound and haptics are the reward.",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1f1a16",
+  "theme_color": "#1f1a16",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

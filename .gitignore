@@ -1,3 +1,7 @@
+# Web game lives in web/
+/web/node_modules/
+/web/dist/
+
 # Unity 6 project lives in prototype/
 /prototype/[Ll]ibrary/
 /prototype/[Tt]emp/

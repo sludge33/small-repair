@@ -1,6 +1,6 @@
 # 0001 – Engine: Unity 6
 
-**Status:** Accepted, 2026-11-02
+**Status:** Superseded by [0002](0002-web.md), 2026-11-04. Accepted 2026-11-02.
 
 ## Decision
 
