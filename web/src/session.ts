@@ -19,6 +19,8 @@ export class Session {
 
   private readonly tutor = new GhostTutor();
   private shownVerb: string | null = null;
+  /** Replaying for the feel alone: the repair and nothing around it. */
+  private freeMode = false;
 
   constructor(
     private readonly bench: ParcelBench,
@@ -31,10 +33,12 @@ export class Session {
     private readonly haptics: Haptics,
     private readonly again: HTMLElement,
   ) {
-    tray.onWrap = () => this.goTo('wrap');
+    tray.onWrap = () => this.goTo(this.freeMode ? 'finished' : 'wrap');
     again.addEventListener('click', () => {
+      this.freeMode = true;
+      this.tray.wrapLabel = 'Set it down';
       this.workbench.restart();
-      this.goTo('unbox');
+      this.goTo('repair');
     });
     desk.onOpenEnvelope = () => {
       this.audio.wake();

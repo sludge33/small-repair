@@ -1,5 +1,6 @@
 import {
   ACESFilmicToneMapping,
+  Box2,
   BufferAttribute,
   BufferGeometry,
   ClampToEdgeWrapping,
@@ -26,6 +27,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { acceleratedRaycast, MeshBVH } from 'three-mesh-bvh';
 import { buildPiece, type MeshData } from './core/bowl-mesh';
 import type { BowlRepair } from './core/bowl-repair';
 import { facingAngles, surfaceNormal, surfacePoint, type Uv } from './core/bowl-surface';
@@ -58,6 +60,11 @@ const SHARD_FOLLOW_S = 0.04;
 const SHARD_RETURN_S = 0.14;
 const LID_S = 0.16;
 
+/** Closer than these to where it is heading, nothing on screen would visibly change, so the frame is not drawn. */
+const SETTLED_RADIANS = 0.0005;
+const SETTLED_LID = 0.001;
+const SETTLED_MM_SQUARED = 0.01;
+
 /** Screen positions of the waiting shards, as normalised device coordinates. */
 const TRAY_X = [-0.58, 0, 0.58];
 const TRAY_Y = -0.56;
@@ -86,6 +93,12 @@ function toGeometry(mesh: MeshData) {
   geometry.setAttribute('color', new BufferAttribute(mesh.colors, 3));
   geometry.setIndex(new BufferAttribute(mesh.indices, 1));
   return geometry;
+}
+
+/** Indexes a mesh's triangles: testing all 40,000 of the bowl's on every touch frame would cost a phone its frame. */
+function indexForPicking(mesh: Mesh) {
+  mesh.geometry.boundsTree = new MeshBVH(mesh.geometry);
+  mesh.raycast = acceleratedRaycast;
 }
 
 function lathe(profile: number[][], segments: number) {
@@ -161,6 +174,8 @@ export class BowlView {
   private readonly seats: Vector3[] = [];
   private readonly trayPoses: { position: Vector3; rotation: Quaternion }[] = [];
   private readonly liveMasks: [PaintMask, DataTexture][] = [];
+  private readonly uploadRegion = new Box2();
+  private readonly uploadPosition = new Vector2();
 
   private readonly raycaster = new Raycaster();
   private readonly pointer = new Vector2();
@@ -176,6 +191,8 @@ export class BowlView {
   private lidAmount = 0;
   private width = 1;
   private height = 1;
+  /** The picture on screen is out of date for a reason the eases cannot see. */
+  private stale = true;
 
   private heldIndex: number | null = null;
   private heldTwist = 0;
@@ -192,6 +209,9 @@ export class BowlView {
     this.renderer.toneMappingExposure = 0.95;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
+    this.renderer.shadowMap.autoUpdate = false;
+    this.renderer.domElement.addEventListener('webglcontextrestored', () => (this.stale = true));
+    document.addEventListener('visibilitychange', () => (this.stale = true));
     parent.prepend(this.renderer.domElement);
 
     const pmrem = new PMREMGenerator(this.renderer);
@@ -223,6 +243,7 @@ export class BowlView {
     this.body.castShadow = true;
     this.body.receiveShadow = true;
     this.bowl.add(this.body);
+    indexForPicking(this.body);
 
     const footProfile = [
       [24, 12],
@@ -242,6 +263,7 @@ export class BowlView {
       const seat = new Vector3(...surfacePoint(shard.center.u, shard.center.v, 'outer'));
       geometry.translate(-seat.x, -seat.y, -seat.z);
       const mesh = new Mesh(geometry, ceramic);
+      indexForPicking(mesh);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       this.shardMeshes.push(mesh);
@@ -280,6 +302,16 @@ export class BowlView {
     this.lidTarget = 0;
     this.lidAmount = 0;
     this.placeShardsInTray();
+    this.stale = true;
+  }
+
+  get pixelRatio() {
+    return this.renderer.getPixelRatio();
+  }
+
+  set pixelRatio(ratio: number) {
+    this.renderer.setPixelRatio(ratio);
+    this.stale = true;
   }
 
   orbit(dxPx: number, dyPx: number) {
@@ -356,6 +388,7 @@ export class BowlView {
     const index = this.heldIndex;
     this.heldIndex = null;
     if (index !== null && seated) this.bowl.attach(this.shardMeshes[index]);
+    this.stale = true;
   }
 
   get lidShut() {
@@ -398,6 +431,7 @@ export class BowlView {
     this.pitch = this.targetPitch = facing.pitch;
   }
 
+  /** Eases everything along and draws, if anything on screen would change. Returns whether it drew. */
   render(deltaTime: number) {
     const follow = damp(this.followSeconds, deltaTime);
     this.yaw += (this.targetYaw - this.yaw) * follow;
@@ -408,32 +442,53 @@ export class BowlView {
     this.lid.visible = this.lidAmount > 0.002;
     this.lid.position.y = LID_OPEN_Y_MM + (LID_CLOSED_Y_MM - LID_OPEN_Y_MM) * clamp01(this.lidAmount);
 
-    this.updateShards(deltaTime);
+    const moved =
+      this.updateShards(deltaTime) ||
+      Math.abs(this.targetYaw - this.yaw) > SETTLED_RADIANS ||
+      Math.abs(this.targetPitch - this.pitch) > SETTLED_RADIANS ||
+      Math.abs(this.lidTarget - this.lidAmount) > SETTLED_LID;
+    const painted = this.uploadMasks();
+    if (!moved && !painted && !this.stale) return false;
 
-    for (const [mask, texture] of this.liveMasks) {
-      if (!mask.dirty) continue;
-      texture.needsUpdate = true;
-      mask.dirty = false;
-    }
+    // Paint casts no shadow, so a stroke on a still bowl keeps the shadow map it has.
+    if (moved || this.stale) this.renderer.shadowMap.needsUpdate = true;
+    this.stale = false;
     this.renderer.render(this.scene, this.camera);
+    return true;
   }
 
+  /** Sends only the texels that changed: a full mask is half a megabyte, and a stroke touches a few hundred bytes. */
+  private uploadMasks() {
+    let painted = false;
+    for (const [mask, texture] of this.liveMasks) {
+      const rect = mask.takeDirty();
+      if (!rect) continue;
+      painted = true;
+      this.uploadRegion.min.set(rect.x, rect.y);
+      this.uploadRegion.max.set(rect.x + rect.width, rect.y + rect.height);
+      this.uploadPosition.set(rect.x, rect.y);
+      this.renderer.copyTextureToTexture(texture, texture, this.uploadRegion, this.uploadPosition);
+    }
+    return painted;
+  }
+
+  /** Returns whether any shard is still on its way. */
   private updateShards(deltaTime: number) {
     const follow = damp(SHARD_FOLLOW_S, deltaTime);
     const settle = damp(SHARD_RETURN_S, deltaTime);
+    let moving = false;
     this.shardMeshes.forEach((mesh, i) => {
-      if (i === this.heldIndex) {
-        mesh.position.lerp(this.heldPosition, follow);
-        mesh.quaternion.slerp(this.heldRotation, follow);
-      } else if (mesh.parent === this.bowl) {
-        mesh.position.lerp(this.seats[i], follow);
-        mesh.quaternion.slerp(IDENTITY, follow);
-      } else {
-        const pose = this.trayPoses[i];
-        mesh.position.lerp(pose.position, settle);
-        mesh.quaternion.slerp(pose.rotation, settle);
-      }
+      const held = i === this.heldIndex;
+      const seated = !held && mesh.parent === this.bowl;
+      const position = held ? this.heldPosition : seated ? this.seats[i] : this.trayPoses[i].position;
+      const rotation = held ? this.heldRotation : seated ? IDENTITY : this.trayPoses[i].rotation;
+      const rate = held || seated ? follow : settle;
+
+      moving ||= mesh.position.distanceToSquared(position) > SETTLED_MM_SQUARED || mesh.quaternion.angleTo(rotation) > SETTLED_RADIANS;
+      mesh.position.lerp(position, rate);
+      mesh.quaternion.slerp(rotation, rate);
     });
+    return moving;
   }
 
   private placeShardsInTray() {
@@ -487,6 +542,7 @@ export class BowlView {
     this.width = Math.max(1, window.innerWidth);
     this.height = Math.max(1, window.innerHeight);
     this.renderer.setSize(this.width, this.height);
+    this.stale = true;
 
     const aspect = this.width / this.height;
     const visibleHeight = Math.max(FRAME_HEIGHT_MM, FRAME_WIDTH_MM / aspect) / this.zoom;

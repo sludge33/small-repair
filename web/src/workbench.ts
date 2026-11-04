@@ -202,6 +202,7 @@ export class Workbench {
     if (this.action === 'hold') {
       const fit = this.heldFit;
       this.audio.fitTone(0);
+      this.haptics.fitPull = 0;
       this.view.release(fit?.snaps ?? false);
       if (fit?.snaps) {
         this.repair.seat(this.heldIndex, fit.clean);
@@ -218,6 +219,7 @@ export class Workbench {
   private moveHeld(x: number, y: number) {
     this.heldFit = this.view.hold(x, this.input.isMouse ? y : y - TOUCH_LIFT_PX);
     this.audio.fitTone(this.heldFit.pull);
+    this.haptics.fitPull = this.heldFit.pull;
   }
 
   private strokeTo(hit: Uv | null, gesture: GestureFrame) {

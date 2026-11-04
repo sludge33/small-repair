@@ -35,6 +35,11 @@ export class ToolTray {
     this.wrap.addEventListener('click', () => this.onWrap());
   }
 
+  /** What the way on from a finished repair says. */
+  set wrapLabel(label: string) {
+    this.wrap.textContent = label;
+  }
+
   show(visible: boolean) {
     this.root.hidden = !visible;
     this.wrap.hidden = !visible || this.shownStep !== 'done';

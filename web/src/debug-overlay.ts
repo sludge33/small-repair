@@ -12,7 +12,12 @@ export interface OverlayStatus {
   outputPeak: number;
   hapticBackend: string;
   ticksFired: number;
+  ticksRefused: number;
   materialName: string;
+  /** Script time this frame, before the GPU's share. */
+  frameMs: number;
+  drawsPerSecond: number;
+  pixelRatio: number;
 }
 
 const signed = (v: number, digits: number) => (v > 0 ? '+' : '') + v.toFixed(digits);
@@ -95,6 +100,7 @@ export class DebugOverlay {
     const m = modulation;
     this.lines.textContent = [
       `${gesture.contact}  ${status.sampleRateHz.toFixed(0)} Hz`,
+      `frame  ${status.frameMs.toFixed(1)} ms  draws ${status.drawsPerSecond.toFixed(0)}/s  dpr ${status.pixelRatio}`,
       `pos  ${gesture.normalizedX.toFixed(2)}, ${gesture.normalizedY.toFixed(2)}`,
       '— driving placeholder audio and haptics —',
       `layers  S ${m.slowLayer.toFixed(2)}  M ${m.mediumLayer.toFixed(2)}  F ${m.fastLayer.toFixed(2)}`,
@@ -104,7 +110,7 @@ export class DebugOverlay {
       `body  ${m.body.toFixed(2)}`,
       `pan  ${signed(m.pan, 2)}`,
       `audio  ${status.audioState}  peak ${status.outputPeak.toFixed(3)}`,
-      `ticks  ${m.hapticTickRate.toFixed(0)}/s  fired ${status.ticksFired}  (${status.hapticBackend})`,
+      `ticks  ${m.hapticTickRate.toFixed(0)}/s  fired ${status.ticksFired}  refused ${status.ticksRefused}  (${status.hapticBackend})`,
       `sharpness  ${m.hapticSharpness.toFixed(2)}  (${status.materialName})`,
     ].join('\n');
   }

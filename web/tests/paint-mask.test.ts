@@ -80,7 +80,7 @@ describe('PaintMask', () => {
     const inBand = Math.floor(0.6 * H) * W + Math.floor(0.25 * W);
     expect(mask.data[inBand]).toBe(0);
 
-    mask.dirty = false;
+    mask.takeDirty();
     mask.stamp({ u: 0.9, v: 0.9 }, 3, 255);
     expect(mask.dirty).toBe(false);
 
@@ -91,5 +91,56 @@ describe('PaintMask', () => {
     mask.reset();
     expect(mask.data[inBand]).toBe(0);
     expect(mask.coverage()[0]).toBe(0);
+  });
+});
+
+describe('takeDirty', () => {
+  const fresh = () => {
+    const mask = new PaintMask(W, H, empty());
+    mask.takeDirty();
+    return mask;
+  };
+
+  it('covers the whole mask after a reset', () => {
+    const mask = new PaintMask(W, H, empty());
+    expect(mask.takeDirty()).toEqual({ x: 0, y: 0, width: W, height: H });
+  });
+
+  it('is empty until something changes, and clears once taken', () => {
+    const mask = fresh();
+    expect(mask.takeDirty()).toBeNull();
+    mask.stamp({ u: 0.5, v: 0.5 }, 3, 255);
+    expect(mask.takeDirty()).not.toBeNull();
+    expect(mask.takeDirty()).toBeNull();
+  });
+
+  it('holds every texel a stamp changed, in far less than the full mask', () => {
+    const mask = fresh();
+    mask.stamp({ u: 0.5, v: 0.5 }, 3, 255);
+    const rect = mask.takeDirty()!;
+    expect(rect.width * rect.height).toBeLessThan((W * H) / 100);
+    for (let i = 0; i < mask.data.length; i++) {
+      if (mask.data[i] === 0) continue;
+      const x = i % W;
+      const y = Math.floor(i / W);
+      expect(x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height).toBe(true);
+    }
+  });
+
+  it('grows to hold two stamps', () => {
+    const mask = fresh();
+    mask.stamp({ u: 0.2, v: 0.5 }, 3, 255);
+    mask.stamp({ u: 0.7, v: 0.5 }, 3, 255);
+    const rect = mask.takeDirty()!;
+    expect(rect.x).toBeLessThan(0.21 * W);
+    expect(rect.x + rect.width).toBeGreaterThan(0.69 * W);
+  });
+
+  it('spans the full width for a stamp across the u seam', () => {
+    const mask = fresh();
+    mask.stamp({ u: 0, v: 0.5 }, 3, 255);
+    const rect = mask.takeDirty()!;
+    expect(rect.x).toBe(0);
+    expect(rect.width).toBe(W);
   });
 });

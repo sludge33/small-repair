@@ -3,6 +3,7 @@ import { BowlView } from './bowl-view';
 import { BowlRepair } from './core/bowl-repair';
 import { isTouching } from './core/gesture';
 import { ModulationMapper } from './core/modulation';
+import { ResolutionGovernor } from './core/resolution-governor';
 import { DebugOverlay } from './debug-overlay';
 import { Haptics } from './haptics';
 import { GhostHand } from './ghost-hand';
@@ -37,6 +38,7 @@ function begin() {
   const ghost = new GhostHand(document.getElementById('ghost')!);
   const session = new Session(bench, desk, workbench, repair, tray, ghost, audio, haptics, document.getElementById('again')!);
   input.onTouchDown = () => audio.wake();
+  const governor = new ResolutionGovernor(view.pixelRatio);
 
   // Lets the preview walk the whole session with synthetic strokes.
   if (import.meta.env.DEV) Object.assign(window, { smallRepairs: { repair, view, session, bench } });
@@ -45,6 +47,8 @@ function begin() {
   let framesThisSecond = 0;
   let rateWindowStart = lastTime;
   let sampleRateHz = 0;
+  let drawsThisSecond = 0;
+  let drawsPerSecond = 0;
 
   const frame = () => {
     const time = performance.now() / 1000;
@@ -57,12 +61,17 @@ function begin() {
     const modulation = mapper.map(voiced, deltaTime);
     audio.apply(modulation);
     haptics.step(modulation, deltaTime);
-    if (session.bowlOnScreen) view.render(deltaTime);
+    if (session.bowlOnScreen && view.render(deltaTime)) {
+      drawsThisSecond++;
+      if (governor.drew(deltaTime)) view.pixelRatio = governor.ratio;
+    }
 
     framesThisSecond++;
     if (time - rateWindowStart >= 1) {
       sampleRateHz = framesThisSecond / (time - rateWindowStart);
+      drawsPerSecond = drawsThisSecond / (time - rateWindowStart);
       framesThisSecond = 0;
+      drawsThisSecond = 0;
       rateWindowStart = time;
     }
 
@@ -79,10 +88,14 @@ function begin() {
         sampleRateHz,
         rawPressure: input.rawPressureSignal,
         audioState: audio.state,
-        outputPeak: audio.outputPeak(),
+        outputPeak: overlay.visible ? audio.outputPeak() : 0,
         hapticBackend: haptics.backend,
         ticksFired: haptics.ticksFired,
+        ticksRefused: haptics.refused,
         materialName: mapper.material.name,
+        frameMs: performance.now() - time * 1000,
+        drawsPerSecond,
+        pixelRatio: view.pixelRatio,
       },
       input.touchCount,
     );

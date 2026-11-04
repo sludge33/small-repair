@@ -52,6 +52,14 @@ export function rasterizeBands(width: number, height: number, cracks: Uv[][], ha
   return { data, totals };
 }
 
+/** A block of texels, for uploading only what changed. */
+export interface TexelRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 /**
  * One paint layer over the bowl's (u, v) space. Values only rise. Stamps are measured in millimetres, so a brush
  * keeps its size however much the texture stretches between the rim and the base.
@@ -61,10 +69,11 @@ export function rasterizeBands(width: number, height: number, cracks: Uv[][], ha
  */
 export class PaintMask {
   readonly data: Uint8Array;
-  /** Set by every change; whoever uploads the texture clears it. */
-  dirty = true;
-
   private readonly done: number[];
+  private dirtyFromX = 0;
+  private dirtyFromY = 0;
+  private dirtyToX = -1;
+  private dirtyToY = -1;
 
   /** @param initial Value outside the regions. Inside them, every texel starts at 0. */
   constructor(
@@ -84,7 +93,29 @@ export class PaintMask {
       if (this.regions.data[i] !== 0) this.data[i] = 0;
     }
     this.done.fill(0);
-    this.dirty = true;
+    this.dirtyFromX = 0;
+    this.dirtyFromY = 0;
+    this.dirtyToX = this.width - 1;
+    this.dirtyToY = this.height - 1;
+  }
+
+  /** Whether anything has changed since the last `takeDirty`. */
+  get dirty() {
+    return this.dirtyToX >= 0;
+  }
+
+  /** The texels changed since the last call, for whoever uploads the texture. A stamp over the u seam spans the full width. */
+  takeDirty(): TexelRect | null {
+    if (!this.dirty) return null;
+    const rect = {
+      x: this.dirtyFromX,
+      y: this.dirtyFromY,
+      width: this.dirtyToX - this.dirtyFromX + 1,
+      height: this.dirtyToY - this.dirtyFromY + 1,
+    };
+    this.dirtyToX = -1;
+    this.dirtyToY = -1;
+    return rect;
   }
 
   /**
@@ -125,7 +156,7 @@ export class PaintMask {
 
         data[index] = after;
         if (region !== 0 && before < DONE_VALUE && after >= DONE_VALUE) this.done[region - 1]++;
-        this.dirty = true;
+        this.markDirty(index - y * width, y);
       }
     }
   }
@@ -133,5 +164,17 @@ export class PaintMask {
   /** Share of each seam that is done, 0–1. */
   coverage() {
     return this.done.map((count, i) => (this.regions.totals[i] > 0 ? count / this.regions.totals[i] : 1));
+  }
+
+  private markDirty(x: number, y: number) {
+    if (!this.dirty) {
+      this.dirtyFromX = this.dirtyToX = x;
+      this.dirtyFromY = this.dirtyToY = y;
+      return;
+    }
+    this.dirtyFromX = Math.min(this.dirtyFromX, x);
+    this.dirtyToX = Math.max(this.dirtyToX, x);
+    this.dirtyFromY = Math.min(this.dirtyFromY, y);
+    this.dirtyToY = Math.max(this.dirtyToY, y);
   }
 }
