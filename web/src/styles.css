@@ -35,6 +35,12 @@ body {
   touch-action: none;
 }
 
+#surface canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
 #marker {
   position: absolute;
   top: -7px;
@@ -101,4 +107,118 @@ body {
   font: inherit;
   font-size: 18px;
   cursor: pointer;
+}
+
+#hint {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 16px);
+  left: 16px;
+  right: 16px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 20px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Sits over the surface but lets strokes through, so the bottom of the screen can still turn the bowl. */
+#tools {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 12px);
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+  pointer-events: none;
+}
+
+.tool {
+  flex: 0 1 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: capitalize;
+  opacity: 0.55;
+}
+
+.tool svg {
+  width: 40px;
+  height: 40px;
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.tool .track {
+  stroke: rgba(232, 223, 208, 0.18);
+}
+
+.tool .ring {
+  stroke: var(--gold);
+  stroke-linecap: round;
+}
+
+.tool .dot {
+  fill: rgba(232, 223, 208, 0.18);
+  stroke: none;
+}
+
+.tool.live {
+  color: var(--ink);
+  opacity: 1;
+}
+
+.tool.live .dot {
+  fill: var(--ink);
+}
+
+.tool.finished {
+  opacity: 0.85;
+}
+
+.tool.finished .dot {
+  fill: var(--gold);
+}
+
+#again {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 84px);
+  transform: translateX(-50%);
+  padding: 10px 28px;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--gold);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#cure {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(10, 7, 5, 0.82);
+  text-align: center;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+#cure p {
+  margin: 0;
+}
+
+#cure .quiet {
+  color: var(--muted);
+  font-size: 14px;
 }

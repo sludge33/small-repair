@@ -10,7 +10,7 @@ Goal: one object at final audio/haptic quality, placeholder art. Go/no-go = play
 
 - [ ] Week 1 – gesture model, debug overlay, blade-on-ceramic wired to audio + haptics
 - [ ] Week 2 – record/edit foley, Web Audio layers, tune modulation on device
-- [ ] Week 3 – placeholder 3D bowl generated in code, masks (clean, lacquer, gold, polish), shard alignment + snapping
+- [x] Week 3 – placeholder 3D bowl generated in code, masks (clean, lacquer, gold, polish), shard alignment + snapping (played in a desktop browser, not yet on a phone)
 - [ ] Week 4 – unbox, wrap and letter flow, tutorial ghost hand
 - [ ] Week 5 – Android haptics, performance pass, free-mode replay
 - [ ] Week 6 – playtests, tuning, go/no-go
@@ -31,7 +31,7 @@ npm run build      # typechecks, then writes the static site to web/dist
 
 Pushing to `main` deploys to GitHub Pages through `.github/workflows/pages.yml` (Settings → Pages → Source: GitHub Actions).
 
-Toggle the debug overlay with a three-finger tap, or F1 on a keyboard. On a desktop, the mouse is the finger and the scroll wheel is pressure.
+Toggle the debug overlay with a three-finger tap, or F1 on a keyboard. On a desktop, the mouse is the finger and the scroll wheel is pressure; while holding a shard the wheel twists it, and ctrl+wheel zooms. On a phone, two fingers turn and pinch the bowl, or twist a held shard.
 
 ## Folders
 

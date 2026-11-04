@@ -15,12 +15,14 @@ export class GestureInput {
   /** Fingers currently down, including ones the gesture ignores. */
   touchCount = 0;
   onTouchDown: () => void = () => {};
+  /** Off while the wheel means something else, such as twisting a held shard. */
+  wheelIsPressure = true;
 
   private readonly analyzer: GestureAnalyzer;
   private readonly toReference: number;
 
   private pointerId: number | null = null;
-  private isMouse = false;
+  private usingMouse = false;
   private clientX = 0;
   private clientY = 0;
   private touchRadius = 0;
@@ -37,7 +39,7 @@ export class GestureInput {
     surface.addEventListener('pointerdown', (e) => {
       if (this.pointerId !== null || !e.isPrimary) return;
       this.pointerId = e.pointerId;
-      this.isMouse = e.pointerType === 'mouse';
+      this.usingMouse = e.pointerType === 'mouse';
       this.track(e);
       surface.setPointerCapture(e.pointerId);
       this.onTouchDown();
@@ -66,6 +68,8 @@ export class GestureInput {
     surface.addEventListener(
       'wheel',
       (e) => {
+        // Ctrl+wheel is zoom, and is also how a trackpad pinch arrives.
+        if (!this.wheelIsPressure || e.ctrlKey) return;
         this.mousePressure = clamp01(this.mousePressure - Math.sign(e.deltaY) * MOUSE_SCROLL_PRESSURE_STEP);
       },
       { passive: true },
@@ -90,6 +94,10 @@ export class GestureInput {
     return frame;
   }
 
+  get isMouse() {
+    return this.usingMouse;
+  }
+
   get clientPosition() {
     return { x: this.clientX, y: this.clientY };
   }
@@ -100,7 +108,7 @@ export class GestureInput {
   }
 
   private readPressure() {
-    if (this.isMouse) {
+    if (this.usingMouse) {
       this.rawPressureSignal = this.mousePressure;
       return this.mousePressure;
     }

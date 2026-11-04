@@ -1,13 +1,19 @@
+import type { StrokeTool } from './bowl-repair';
+
 /**
- * Filtered-noise stand-in for the blade-on-ceramic foley, so the modulation can be heard before recordings exist.
+ * Filtered-noise stand-ins for each tool's foley, so the modulation can be heard before recordings exist.
  * Delete this when decoded recordings fill the same four layers.
  */
 
-const SLOW_CUTOFF_HZ = 3000;
-const MEDIUM_CUTOFF_HZ = 6000;
-const FAST_CUTOFF_HZ = 12000;
-const BODY_CUTOFF_HZ = 160;
 const LOOP_SECONDS = 4;
+
+/** Low-pass cutoffs of the slow, medium, fast and body layers, in Hz. Harder contact is brighter. */
+const TOOL_CUTOFFS_HZ: Record<StrokeTool, [number, number, number, number]> = {
+  blade: [3000, 6000, 12000, 160],
+  brush: [700, 1300, 2400, 90],
+  duster: [1500, 3000, 6000, 70],
+  cloth: [450, 900, 1800, 120],
+};
 
 /** Level of the body layer against the texture layers. */
 export const BODY_LEVEL = 0.5;
@@ -53,12 +59,13 @@ function filteredLoop(source: Float32Array, sampleRate: number, cutoffHz: number
   return out;
 }
 
-export function scrapeLayers(sampleRate: number): FoleyLayers {
+export function scrapeLayers(sampleRate: number, tool: StrokeTool = 'blade'): FoleyLayers {
   const source = noise(Math.round(sampleRate * LOOP_SECONDS));
+  const [slow, medium, fast, body] = TOOL_CUTOFFS_HZ[tool];
   return {
-    slow: filteredLoop(source, sampleRate, SLOW_CUTOFF_HZ),
-    medium: filteredLoop(source, sampleRate, MEDIUM_CUTOFF_HZ),
-    fast: filteredLoop(source, sampleRate, FAST_CUTOFF_HZ),
-    body: filteredLoop(source, sampleRate, BODY_CUTOFF_HZ),
+    slow: filteredLoop(source, sampleRate, slow),
+    medium: filteredLoop(source, sampleRate, medium),
+    fast: filteredLoop(source, sampleRate, fast),
+    body: filteredLoop(source, sampleRate, body),
   };
 }

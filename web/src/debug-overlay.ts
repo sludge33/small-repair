@@ -12,6 +12,7 @@ export interface OverlayStatus {
   outputPeak: number;
   hapticBackend: string;
   ticksFired: number;
+  materialName: string;
 }
 
 const signed = (v: number, digits: number) => (v > 0 ? '+' : '') + v.toFixed(digits);
@@ -58,13 +59,12 @@ export class DebugOverlay {
   private readonly steadiness = new Graph('#82dc82');
   private readonly pressure = new Graph('#fabe5a');
   private readonly lines = document.createElement('pre');
-  private visible = true;
+  private shown = false;
   private threeFingersDown = false;
 
   constructor(private readonly root: HTMLElement) {
     for (const graph of [this.speed, this.steadiness, this.pressure]) root.append(graph.label, graph.canvas);
     root.append(this.lines);
-    root.hidden = false;
 
     window.addEventListener('keydown', (e) => {
       if (e.key === 'F1') {
@@ -83,7 +83,7 @@ export class DebugOverlay {
     this.speed.push(gesture.speed / Math.max(maxSpeed, 1));
     this.steadiness.push(gesture.steadiness);
     this.pressure.push(gesture.pressure);
-    if (!this.visible) return;
+    if (!this.shown) return;
 
     this.speed.label.textContent = `speed  ${gesture.speed.toFixed(0)} px/s`;
     this.steadiness.label.textContent = `steadiness  ${gesture.steadiness.toFixed(2)}`;
@@ -105,12 +105,16 @@ export class DebugOverlay {
       `pan  ${signed(m.pan, 2)}`,
       `audio  ${status.audioState}  peak ${status.outputPeak.toFixed(3)}`,
       `ticks  ${m.hapticTickRate.toFixed(0)}/s  fired ${status.ticksFired}  (${status.hapticBackend})`,
-      `sharpness  ${m.hapticSharpness.toFixed(2)}  (${defaultModulationParams.material.name})`,
+      `sharpness  ${m.hapticSharpness.toFixed(2)}  (${status.materialName})`,
     ].join('\n');
   }
 
+  get visible() {
+    return this.shown;
+  }
+
   private toggle() {
-    this.visible = !this.visible;
-    this.root.hidden = !this.visible;
+    this.shown = !this.shown;
+    this.root.hidden = !this.shown;
   }
 }

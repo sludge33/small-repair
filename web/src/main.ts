@@ -1,10 +1,17 @@
 import { AudioEngine } from './audio/audio';
+import { BowlView } from './bowl-view';
+import { BowlRepair } from './core/bowl-repair';
 import { isTouching } from './core/gesture';
 import { ModulationMapper } from './core/modulation';
 import { DebugOverlay } from './debug-overlay';
 import { Haptics } from './haptics';
 import { GestureInput } from './input';
+import { ToolTray } from './tool-tray';
+import { Workbench } from './workbench';
 import './styles.css';
+
+/** A long stall, such as a trip to another app, should not count as time spent curing or easing. */
+const MAX_DELTA_SECONDS = 0.1;
 
 const surface = document.getElementById('surface')!;
 const marker = document.getElementById('marker')!;
@@ -17,7 +24,14 @@ function begin() {
   const mapper = new ModulationMapper();
   const haptics = new Haptics();
   const overlay = new DebugOverlay(document.getElementById('overlay')!);
+  const repair = new BowlRepair();
+  const view = new BowlView(surface, repair);
+  const tray = new ToolTray(document.getElementById('tools')!);
+  const workbench = new Workbench(surface, input, repair, view, audio, haptics, tray);
   input.onTouchDown = () => audio.wake();
+
+  // Lets the preview walk the whole repair with synthetic strokes.
+  if (import.meta.env.DEV) Object.assign(window, { smallRepairs: { repair, view } });
 
   let lastTime = performance.now() / 1000;
   let framesThisSecond = 0;
@@ -26,13 +40,16 @@ function begin() {
 
   const frame = () => {
     const time = performance.now() / 1000;
-    const deltaTime = time - lastTime;
+    const deltaTime = Math.min(time - lastTime, MAX_DELTA_SECONDS);
     lastTime = time;
 
     const gesture = input.step(time);
-    const modulation = mapper.map(gesture, deltaTime);
+    const voiced = workbench.step(gesture, deltaTime);
+    mapper.material = workbench.material;
+    const modulation = mapper.map(voiced, deltaTime);
     audio.apply(modulation);
     haptics.step(modulation, deltaTime);
+    view.render(deltaTime);
 
     framesThisSecond++;
     if (time - rateWindowStart >= 1) {
@@ -41,7 +58,7 @@ function begin() {
       rateWindowStart = time;
     }
 
-    marker.hidden = !isTouching(gesture);
+    marker.hidden = !overlay.visible || !isTouching(gesture);
     if (!marker.hidden) {
       const { x, y } = input.clientPosition;
       marker.style.transform = `translate(${x}px, ${y}px)`;
@@ -57,6 +74,7 @@ function begin() {
         outputPeak: audio.outputPeak(),
         hapticBackend: haptics.backend,
         ticksFired: haptics.ticksFired,
+        materialName: mapper.material.name,
       },
       input.touchCount,
     );

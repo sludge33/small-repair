@@ -5,6 +5,13 @@ const SHARP_TICK_MS = 8;
 const SOFT_TICK_MS = 14;
 const SHARP_THRESHOLD = 0.5;
 
+/** Discrete moments, as Vibration API on/off patterns in milliseconds. */
+const PATTERNS = {
+  seat: [12, 30, 22],
+  lid: [40],
+  puff: [6],
+};
+
 /**
  * Plays the modulation's tick stream on the device. Ticks are still counted where there is no backend,
  * so the overlay can show them. Android Chrome is the only backend for now: the Vibration API has no amplitude
@@ -16,6 +23,10 @@ export class Haptics {
   readonly backend = typeof navigator.vibrate === 'function' ? 'web vibrate' : 'none';
 
   private readonly stream = new HapticTickStream();
+
+  pulse(name: keyof typeof PATTERNS) {
+    if (this.backend !== 'none') navigator.vibrate(PATTERNS[name]);
+  }
 
   step(frame: ModulationFrame, deltaTime: number) {
     if (!this.stream.step(frame.hapticTickRate, deltaTime)) return;

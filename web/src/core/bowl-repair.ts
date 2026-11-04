@@ -5,6 +5,8 @@ import { PaintMask, rasterizeBands } from './paint-mask';
 
 export type StepId = 'clean' | 'align' | 'lacquer' | 'cure' | 'gold' | 'polish' | 'done';
 export type Tool = 'blade' | 'hands' | 'brush' | 'lid' | 'duster' | 'cloth';
+/** The tools that are dragged along the bowl and so have a continuous sound. */
+export type StrokeTool = 'blade' | 'brush' | 'duster' | 'cloth';
 
 const STEP_ORDER: StepId[] = ['clean', 'align', 'lacquer', 'cure', 'gold', 'polish', 'done'];
 

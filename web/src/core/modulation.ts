@@ -1,3 +1,4 @@
+import type { StrokeTool } from './bowl-repair';
 import { isTouching, type GestureFrame } from './gesture';
 import { clamp01, inverseLerp, lerp, moveTowards } from './math';
 
@@ -25,6 +26,14 @@ export const defaultModulationParams = {
 };
 
 export type ModulationParams = typeof defaultModulationParams;
+export type Material = ModulationParams['material'];
+
+export const TOOL_MATERIALS: Record<StrokeTool, Material> = {
+  blade: defaultModulationParams.material,
+  brush: { name: 'Lacquer', hapticTickRate: 18, hapticSharpness: 0.2 },
+  duster: { name: 'Gold dust', hapticTickRate: 10, hapticSharpness: 0.1 },
+  cloth: { name: 'Cloth on gold', hapticTickRate: 28, hapticSharpness: 0.45 },
+};
 
 /** The values audio and haptics should use this frame, following the spec's gesture-to-sound table. */
 export interface ModulationFrame {
@@ -46,11 +55,16 @@ export interface ModulationFrame {
 
 /** Maps gesture frames to modulation values. Holds the contact envelope and the last stroke speed as state. */
 export class ModulationMapper {
+  /** What the tool in hand is touching; sets the haptic texture. */
+  material: Material;
+
   private envelope = 0;
   private strokeSpeed = 0;
   private moving = 0;
 
-  constructor(private readonly params: ModulationParams = defaultModulationParams) {}
+  constructor(private readonly params: ModulationParams = defaultModulationParams) {
+    this.material = params.material;
+  }
 
   map(gesture: GestureFrame, deltaTime: number): ModulationFrame {
     const p = this.params;
@@ -90,8 +104,8 @@ export class ModulationMapper {
       gain: this.envelope * this.moving * pressureGain,
       body: gesture.pressure,
       pan: gesture.normalizedX * 2 - 1,
-      hapticTickRate: touching ? p.material.hapticTickRate * clamp01(speed / Math.max(fastAnchor, 1)) : 0,
-      hapticSharpness: p.material.hapticSharpness,
+      hapticTickRate: touching ? this.material.hapticTickRate * clamp01(speed / Math.max(fastAnchor, 1)) : 0,
+      hapticSharpness: this.material.hapticSharpness,
     };
   }
 

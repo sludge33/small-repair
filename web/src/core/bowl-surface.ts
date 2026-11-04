@@ -97,6 +97,12 @@ export function surfaceNormal(u: number, v: number, side: Side): Vec3 {
   return [sign * p.nr * Math.cos(angle), sign * p.ny, sign * p.nr * Math.sin(angle)];
 }
 
+/** How far to turn the bowl, about Y and then X, so the outer wall at (u, v) faces straight out along +Z. */
+export function facingAngles(u: number, v: number) {
+  const p = profileAt(v);
+  return { yaw: u * Math.PI * 2 - Math.PI / 2, pitch: Math.atan2(p.ny, p.nr) };
+}
+
 /** Millimetres along the surface between two nearby (u, v) points. Unlike a straight chord, it does not treat u = 0.02 and u = 0.98 as neighbours. */
 export function surfaceDistanceMm(a: Uv, b: Uv) {
   const circumference = Math.PI * 2 * Math.max(radiusAt(a.v), radiusAt(b.v));

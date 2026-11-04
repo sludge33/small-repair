@@ -4,6 +4,7 @@ import { BODY_LEVEL, OUTPUT_LEVEL, type FoleyLayers } from '../core/scrape-layer
 const SMOOTHING_SECONDS = 0.005;
 // BiquadFilter Q is in dB for a low-pass. -6 dB is linear Q 0.5: no resonance, however far the cutoff moves.
 const LOWPASS_Q_DB = -6;
+const RETIRE_SECONDS = 0.3;
 
 /**
  * One continuous tool-on-material sound: looping speed layers and a body layer, driven by the modulation every frame.
@@ -18,6 +19,7 @@ export class FoleyVoice {
   private readonly master: GainNode;
   private readonly panner: StereoPannerNode;
   private readonly textures: AudioBufferSourceNode[] = [];
+  private readonly sources: AudioBufferSourceNode[] = [];
   private lastGain = 0;
 
   constructor(
@@ -59,6 +61,12 @@ export class FoleyVoice {
     for (const source of this.textures) this.glide(source.playbackRate, rate);
   }
 
+  /** Fades out and frees the voice; it cannot be used again. */
+  retire() {
+    this.glide(this.master.gain, 0);
+    for (const source of this.sources) source.stop(this.ctx.currentTime + RETIRE_SECONDS);
+  }
+
   private addLayer(samples: Float32Array, destination: AudioNode, pitched: boolean) {
     const buffer = this.ctx.createBuffer(1, samples.length, this.ctx.sampleRate);
     buffer.copyToChannel(samples as Float32Array<ArrayBuffer>, 0);
@@ -70,6 +78,7 @@ export class FoleyVoice {
     gain.gain.value = 0;
     source.connect(gain).connect(destination);
     source.start();
+    this.sources.push(source);
 
     if (pitched) this.textures.push(source);
     return gain;
